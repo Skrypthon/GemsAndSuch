@@ -1,14 +1,16 @@
 
 import java.awt.event.*;
 
-public class GemTitlePage implements MouseListener{
+public class GemSummaryPage implements MouseListener{
 
-    GemRenderer r;
+    private GemRenderer r;
+    private GemGame g;
     private boolean clicked = false;
 
-    public GemTitlePage(GemRenderer r){
+    public GemSummaryPage(GemRenderer r, GemGame g){
         
         this.r = r;
+        this.g = g;
         r.addMouseListener(this);
 
         displayTitle();
@@ -20,21 +22,29 @@ public class GemTitlePage implements MouseListener{
     // Title Page
     public void displayTitle(){
         try{
+
             while(!this.clicked){
+
                 r.niceBackground();
 
                 // Title
-                r.string("Gems and Such", 80, 50, r.fontBig, "WHITE", "");
+                r.string("Game Over", 80, 50, r.fontBig, "WHITE", "");
 
                 // Line
                 r.hline(10, 90, 580, 5, "BLUE");
                 r.hline(10, 90, 580, 3, "GREY");
 
+                // Score readout
+                r.string("Your score was:", 200, 250, r.fontSmall, "WHITE", "");
+                r.string("" + g.getScore(), 230, 280, r.fontBig, "YELLOW", "");
+
+
                 // Click to begin
-                r.string("Click to Begin", 200, 250, r.fontSmall, "WHITE", "");
+                r.string("Click to quit", 200, 350, r.fontSmall, "WHITE", "");
 
                 r.delayAndClear();
             }
+
         }catch(Plotter.EntityLimitException e){
             System.out.println("Entity limit reached...");
         }
@@ -46,7 +56,7 @@ public class GemTitlePage implements MouseListener{
 
     public void mouseReleased(MouseEvent e) {
         r.removeMouseListener(this);
-        this.clicked = true;
+        System.exit(0);
     }
 
     public void mouseEntered(MouseEvent e) {
@@ -59,3 +69,4 @@ public class GemTitlePage implements MouseListener{
     }
 
 }
+

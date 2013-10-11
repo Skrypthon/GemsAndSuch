@@ -25,6 +25,8 @@ public class Test{
 
             new GemGameController(r, game);
 
+            new GemSummaryPage(r, game);
+
         }catch(java.io.IOException e){
             e.printStackTrace();
             System.exit(1);
