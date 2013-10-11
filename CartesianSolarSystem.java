@@ -3,8 +3,11 @@
 import java.lang.Math;
 import java.awt.Insets;
 
+/** Cartesian version of SolarSystem class.  Also provides adjustments to avoid problems with the inset from the window manager.
+ */
 public class CartesianSolarSystem extends SolarSystem{
 
+    // used to speed up rad conversions.
     private static double RADIANS_TO_DEGREES = 180.0 / Math.PI;
 
     /* Store width, height and centre point.
@@ -22,6 +25,7 @@ public class CartesianSolarSystem extends SolarSystem{
     // Store frame insets to adjust 0,0 position.
     private Insets is;
 
+    /** Create a new renderer with a given width and height. */
 	public CartesianSolarSystem(int width, int height){
         super(width, height);
 
@@ -47,18 +51,22 @@ public class CartesianSolarSystem extends SolarSystem{
         return getWidth()/2.0;
     }
 
+    /** Return the width of the rendering plane, taking into account inset restrictions. */
     public int getWidth(){
         return width - is.left - is.right;
     }
 
+    /** Return the height of the rendering plane, taking into account inset restrictions. */
     public int getHeight(){
         return height - is.top - is.bottom;
     }
 
+    /** Adjust a non-inset X coordinate (say, from a mouse event) to an inset one on the plane. */
     public int adjustXForInsets(int x){
         return x - is.left;
     }
 
+    /** Adjust a non-inset Y coordinate (say, from a mouse event) to an inset one on the plane. */
     public int adjustYForInsets(int y){
         return y - is.top;
     }
@@ -97,13 +105,14 @@ public class CartesianSolarSystem extends SolarSystem{
         /* System.out.println("X:" + x + ", " + y); */
 
 
-
+        // Adjust stuff in the other quadrant
         if(x >= 0)
             y *= -1;
         
 
         double angle = Math.atan( -y / x ) * RADIANS_TO_DEGREES + 270;
 
+        // Adjust stuff in the other quadrant
         if(x >= 0)
             angle *= -1;
         

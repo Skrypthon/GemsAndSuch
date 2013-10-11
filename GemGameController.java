@@ -3,24 +3,36 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.awt.MouseInfo;
 
+/** Controls the majority of interaction between UI and game logic.  Handles all input logic. 
+ *
+ * Bit of a god class really, but hey, MVC is ugly sometimes.
+ * */
 public class GemGameController implements MouseListener, MouseMotionListener{
 
+    /* Store things we need to get to */
     private GemGame g;
     private GemRenderer r;
 
+    // Gem box location for easier drawing
     private int GEM_BOX_X = 200;
     private int GEM_BOX_Y = 20;
 
+    // Gem size.  Note that this must be 50 because the drawing specialisms
+    // I added later will cause screwups otherwise.  FIXME for sure.
     private int GEM_SIZE = 50;
 
+    // How long does a game last before we tell people to bugger off.
     private long GAME_LENGTH_IN_TICKS = 8000;
 
     // Somewhere to keep mouse actions
     private ArrayList<ClickArea> buttons = new ArrayList<ClickArea>();
 
+    // Used to control pause/quit actions, responds to clicks using the 
+    // area system.
     private PauseClickArea pauseGame = new PauseClickArea(this, 30, 360, 120, 20);
     private QuitClickArea quitGame   = new QuitClickArea(this, 30, 390, 120, 20);
 
+    /** Creates an new GemGameController with a given renderer and game object. */
     public GemGameController(GemRenderer r, GemGame g){
         this.r = r;
         this.g = g;
@@ -55,8 +67,10 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         }
     }
 
+    /** Run the main game loop. */
     public void gameLoop(){
 
+        // Attach mouse listeners
         r.addMouseListener(this);
         r.addMouseMotionListener(this);
 
@@ -66,6 +80,8 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             drawBoilerplate(ticksRemaining);
             renderGems();
 
+            // Check we're not near the entity limit.
+            // In practice, we're not (hooray!) and use around 20k
             /* System.out.println("DEBUG: Entities: " + r.getEntityCount()); */
 
             r.delayAndClear();
@@ -74,12 +90,12 @@ public class GemGameController implements MouseListener, MouseMotionListener{
                 ticksRemaining -= 1;
         }
 
-
+        // We don't care about the mouse any more
         r.removeMouseListener(this);
         r.removeMouseMotionListener(this);
     }
 
-
+    // Draw all the boilerplate and UI stuff.
     private void drawBoilerplate(long ticksRemaining){
         try{
 
@@ -88,6 +104,7 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             // Line down the LHS
             r.vline(180, 0, r.getHeight(), 2, "BLUE");
 
+            // Text in the sidebar
             r.string("Gems!", 10, 10, r.fontBig, "WHITE", "");
             r.hline(10, 50, 160, 5, "BLUE");
             r.string("Score: ", 10, 60, r.fontSmall, "WHITE", "");
@@ -95,7 +112,6 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             r.string("Time: ", 10, 130, r.fontSmall, "WHITE", "");
             r.string("" + ticksRemaining, 10, 160, r.fontBig, "YELLOW", "");
             r.hline(10, 200, (160.0/GAME_LENGTH_IN_TICKS) * ticksRemaining, 5, "YELLOW");
-            
             r.string("combo: ", 10, 230, r.fontSmall, "white", "");
             r.string("" + g.lastCombo(), 10, 260, r.fontBig, "YELLOW", "");
 
@@ -106,12 +122,16 @@ public class GemGameController implements MouseListener, MouseMotionListener{
 
             r.string("[Quit]", 43, 390, r.fontSmall, "GREY", "");
 
+            // Box around gems
             r.box(GEM_BOX_X, GEM_BOX_Y, g.GRID_WIDTH * GEM_SIZE, g.GRID_WIDTH * GEM_SIZE, 1, "GREY");
 
+        // Ignore these but warn on stderr
         }catch(Plotter.EntityLimitException e){
+            System.err.println("Warning: entity limit reached!");
         }
     }
 
+    /** Render the gems in a loop. */
     private void renderGems(){
         try{
             for(int i=0; i<g.GRID_WIDTH; i++){
@@ -128,7 +148,7 @@ public class GemGameController implements MouseListener, MouseMotionListener{
     }
 
 
-    /* Render a single gem in the GEM_SIZExGEM_SIZE space with the top-left at x, y. */
+    /** Render a single gem in the GEM_SIZExGEM_SIZE space with the top-left at x, y. */
     private void renderGem(Gem gem, double x, double y) throws Plotter.EntityLimitException{
 
         // Outline on hover using painter's algorithm 
@@ -196,10 +216,8 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         }
 
 
-        // TODO: Retricule when active
+        // Draw the reticule when a gem is active
         if(gem.isActive()){
-
-            // FIXME: this presumes that GEM_SIZE is 50.
             r.hline(x, y, 10, 2, "YELLOW");
             r.hline(x+40, y, 10, 2, "YELLOW");
             r.hline(x, y+50, 10, 2, "YELLOW");
@@ -213,21 +231,7 @@ public class GemGameController implements MouseListener, MouseMotionListener{
 
     }
 
-    private void checkButtonHoverStates(){
-     }
-
-    public void mousePressed(MouseEvent e) {
-    }
-
-    public void mouseReleased(MouseEvent e) {
-    }
-
-    public void mouseEntered(MouseEvent e) {
-    }
-
-    public void mouseExited(MouseEvent e) {
-    }
-
+    /** Handle mouse clicks by looking for ClickAreas in the buttons ArrayList. */
     public void mouseClicked(MouseEvent e) {
         if(!pauseGame.isPaused()){
             for(ClickArea cl: buttons){
@@ -240,10 +244,10 @@ public class GemGameController implements MouseListener, MouseMotionListener{
     }
 
 
-    public void mouseDragged(MouseEvent e){
-    }
 
-    // Each time the mouse moves, handle hover states for the various buttons.
+    /** Each time the mouse moves, handle hover states for the various buttons.
+     * This implements the hover code by keeping track of each ClickArea.
+     */
     public void mouseMoved(MouseEvent e){
         if(!pauseGame.isPaused()){
 
@@ -267,5 +271,13 @@ public class GemGameController implements MouseListener, MouseMotionListener{
 
         }
     }
+
+    /* Java interface cruft */
+    private void checkButtonHoverStates() {}
+    public void mousePressed(MouseEvent e) {}
+    public void mouseReleased(MouseEvent e) {}
+    public void mouseEntered(MouseEvent e) {}
+    public void mouseExited(MouseEvent e) {}
+    public void mouseDragged(MouseEvent e){}
 
 }

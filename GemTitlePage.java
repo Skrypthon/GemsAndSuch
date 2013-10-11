@@ -1,11 +1,14 @@
 
 import java.awt.event.*;
 
+/** Displays a title page to the user, and waits for a click to continue. */
 public class GemTitlePage implements MouseListener{
 
-    GemRenderer r;
+    /** Handles to renderer and state for waiting. */
+    private GemRenderer r;
     private boolean clicked = false;
 
+    /** Create and display a new title page using the given renderer. */
     public GemTitlePage(GemRenderer r){
         
         this.r = r;
@@ -13,11 +16,12 @@ public class GemTitlePage implements MouseListener{
 
         displayTitle();
 
+        // Cls afterwards
         r.delayAndClear();
     }
 
 
-    // Title Page
+    /** Display the title Page */
     public void displayTitle(){
         try{
             while(!this.clicked){
@@ -41,21 +45,16 @@ public class GemTitlePage implements MouseListener{
 
     }
 
-    public void mousePressed(MouseEvent e) {
-    }
-
+    /** Tells the interface to stop looping and fall out. */
     public void mouseReleased(MouseEvent e) {
         r.removeMouseListener(this);
         this.clicked = true;
     }
 
-    public void mouseEntered(MouseEvent e) {
-    }
-
-    public void mouseExited(MouseEvent e) {
-    }
-
-    public void mouseClicked(MouseEvent e) {
-    }
+    /* Java interface cruft. */
+    public void mousePressed(MouseEvent e) {    }
+    public void mouseEntered(MouseEvent e) {    }
+    public void mouseExited(MouseEvent e) {    }
+    public void mouseClicked(MouseEvent e) {    }
 
 }

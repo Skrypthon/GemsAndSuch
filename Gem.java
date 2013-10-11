@@ -1,7 +1,12 @@
 
 
-/** Represents a single gem to the game. */
-
+/** Represents a single gem to the game. 
+ *
+ * Gems have a type, a (number from 0-5), and two properties.  Firstly
+ * they may be highlighted for selection (hover).  Secondly they may
+ * be selected, i.e. ready to be swapped with a second gem.
+ *
+ */
 public class Gem{
 
     public int type;

@@ -5,15 +5,23 @@ import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.ArrayList;
 
+/** Handles Gem-game-specific rendering tasks that are common to the whole look and feel. */
 public class GemRenderer extends Plotter{
 
+    /** Small font used in game. */
     public Font fontSmall;
+
+    /** Large font used in game. */
     public Font fontBig;
 
     // Background circles
     private ArrayList<Point2D.Double> bgcircles = new ArrayList<Point2D.Double>();
     private ArrayList<Point2D.Double> bgmotion = new ArrayList<Point2D.Double>();
 
+    /** Create a new rendering window and context, with a given title.
+     *
+     * @throws IOException when the font files cannot be loaded properly.
+     */
     public GemRenderer(int width, int height, String title) throws IOException{
         super(width, height, title);
 
@@ -37,7 +45,11 @@ public class GemRenderer extends Plotter{
     }
 
 
-    /* Render a nice background of floating circles. */
+    /** Render a nice background of floating circles. 
+     * 
+     * This should be called regularly to ensure the motion looks all nice and such.
+     *
+     * */
     public void niceBackground() throws EntityLimitException{
         for(int i=0; i<bgcircles.size(); i++){
 

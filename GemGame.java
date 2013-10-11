@@ -2,15 +2,19 @@
 import java.awt.Point;
 import java.util.ArrayList;
 
+/** Primary game logic model.  Handles gem selection, deletion, positioning and scoring.
+ */
 public class GemGame{
 
-    private GemRenderer r;
-
+    // Minimum group size necessary to score
     public static final int MIN_GROUP_SIZE = 4;
+
+    // Grid size and grid storage as a linearised 2D array
     public static final int GRID_WIDTH = 8;
     private Gem[] grid;
 
-    // Selection variables
+    // Selection variables used when one gem is selected
+    // but before a second one is.
     private Gem halfSelection = null;
     private int halfSelectedX = -1;
     private int halfSelectedY = -1;
@@ -19,48 +23,57 @@ public class GemGame{
     private int score = 0;
     private int scorePerClick = 0; // Used to weight bonus score
 
+    /** Creates a new game with 0 score and random gems. */
     public GemGame() throws java.io.IOException{
         initGems();
     }
 
+    /** Returns the total score to this point. */
     public int getScore(){
         return score;
     }
 
-    // Fill the grid with random gems
+    /** Fill the grid with random gems. */
     private void initGems(){
         
+        // New memory space
         grid = new Gem[ GRID_WIDTH * GRID_WIDTH ];
 
+        // Fill with random gems
         for(int i=0; i<grid.length; i++){
             grid[i] = new Gem();
         }
 
         // Delete from the bottom to force "settling"
-        // TODO
+        for(int i=0; i<GRID_WIDTH; i++){
+            deleteAndShift(i, GRID_WIDTH - 1);
+        }
 
         // Reset score afterwards
         score = 0;
     }
 
+    /** Select a gem based on an object reference. */
     public void selectGem(Gem gem){
         // Find gem
         int index = findGemIndex(gem);
 
     }
 
+    /** Select a gem using an index number. */
     public void selectGem(int index){
         int gemx = getGemX(index);
         int gemy = getGemY(index);
     }
 
+    /** Select a gem using x-y coordinates. */
     public void selectGem(int x, int y){
 
-        System.out.println("Select gem " + x + ", " + y);
-
+        // Load the gem
         Gem gem = getGemXY(x, y);
         scorePerClick = 0;  // Reset cascade score
 
+        // See if someone's already selected one
         if(halfSelection != null){
             if(gem == halfSelection){
                 gem.deactivate();
@@ -87,6 +100,7 @@ public class GemGame{
                 }
             }
         }else{
+            // If not, select one
             gem.activate();
             halfSelection = gem;
             halfSelectedX = x;
@@ -114,13 +128,21 @@ public class GemGame{
         grid[idx2].hoverOut();
     }
 
-    // Get the group size from the last interaction
+    /** Returns the score from the last user interaction, including all cascade bonuses. */
     public int lastCombo(){
         return scorePerClick;
     }
         
 
-    // Recursively spider and count the number of adjacent gems
+    /** Recursively spider and count the number of adjacent gems.
+     * This only works for gems in a line.  If there are two dimensions of lines, the longer one
+     * is preferred.
+     *
+     * @param x The x co-ordinate to start from
+     * @param y The y co-ordinate to start from
+     * @param group An array list that will be filled with points in the group when complete
+     * @param horizontal Should this search horizontally or vertically?
+     */
     private int countGroup(int x, int y, ArrayList<Point> group, boolean horizontal){
        
         // Return if out of bounds.
@@ -157,7 +179,10 @@ public class GemGame{
         return adjacent;
     }
 
-    // Compare gems taking into account the limits of the plane
+    /** Compare gems taking into account the limits of the plane. 
+     *
+     * @return The gem type, or -1 if the point is beyond bounds.
+     * */
     private int getGemType(int x, int y){
         if( x < 0 || y < 0 || x >= GRID_WIDTH || y >= GRID_WIDTH )
             return -1;
@@ -166,7 +191,10 @@ public class GemGame{
     }
 
 
-    // Delete a gem and shift other down, filling in the grid at the top
+    /** Delete a gem and shift other down, filling in the grid at the top.
+     *
+     * Also calls cascadeFrom all the way up to ensure proper matching occurs.
+     */
     private void deleteAndShift(int x, int y){
 
         // Shift all the gems up, overwriting the dead one and losing its ref.
@@ -184,7 +212,11 @@ public class GemGame{
     }
 
 
-
+    /** Group match, delete, and repeat until no more groups match in dirty areas.
+     *
+     * This is the core routine that ensures everything filters down.  It's recursive by invoking 
+     * deleteAndShift.
+     */
     private boolean cascadeFrom(int x, int y){
         
         // First, find the group that match
@@ -222,8 +254,12 @@ public class GemGame{
     }
 
 
-    // Test if a co-ordinate is immediately adjacent to the
-    // existing half-selection.
+    /** Test if a co-ordinate is immediately adjacent to the
+     * existing half-selection.
+     *
+     * Requires that a half-selection exists.  If it does not
+     * this will always return false.
+     */
     public boolean adjacent(int x, int y){
 
         // If nothing is selected, say no.
@@ -237,6 +273,9 @@ public class GemGame{
         return (xdiff + ydiff <= 1);
     }
 
+    /** Called when hovering over a gem.
+     * Will highlight a gem only if it is a legal move.
+     */
     public void hoverIn(int x, int y){
 
         if(halfSelection == null){
@@ -247,29 +286,37 @@ public class GemGame{
         }
     }
 
+    /** Called when hovering away from a gem.
+     */
     public void hoverOut(int x, int y){
         // TODO: logic
         getGemXY(x, y).hoverOut();
     }
 
+    /** Return the 1D index from 2D coordinates. */
     public int getGemIndex(int row, int col){
         return row * GRID_WIDTH + col;
     }
 
-    // Get gem from X-Y lookup.
+    /** Get gem from X-Y lookup. */
     public Gem getGemXY(int row, int col){
         return grid[ getGemIndex(row, col) ];
     }
 
+    /** Return the X coordinate of a gem from its 1D index. */
     private int getGemX(int index){
         return index % GRID_WIDTH;
     }
 
+    /** Return the Y coordinate of a gem from its 1D index. */
     private int getGemY(int index){
         return (int)Math.floor(index / GRID_WIDTH);
     }
 
-    // Return index based on gem object
+    /** Return index based on gem object.  
+     *
+     * Slow and thus possibly never used...
+     * */
     private int findGemIndex(Gem gem){
         for(int i=0; i<grid.length; i++){
             if(gem == grid[i])

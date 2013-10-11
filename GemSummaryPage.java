@@ -1,12 +1,15 @@
 
 import java.awt.event.*;
 
+/** Presents a nice game summary page to the player. */
 public class GemSummaryPage implements MouseListener{
 
+    // Keep track of resources, and state for if we've been told to quit
     private GemRenderer r;
     private GemGame g;
     private boolean clicked = false;
 
+    /** Display a summary page of a given game, using a given renderer. */
     public GemSummaryPage(GemRenderer r, GemGame g){
         
         this.r = r;
@@ -19,7 +22,7 @@ public class GemSummaryPage implements MouseListener{
     }
 
 
-    // Title Page
+    /** Display the summary page and wait. */
     public void displayTitle(){
         try{
 
@@ -51,22 +54,18 @@ public class GemSummaryPage implements MouseListener{
 
     }
 
-    public void mousePressed(MouseEvent e) {
-    }
 
+    /** Tells the rendering loop to stop waiting and quit. */
     public void mouseReleased(MouseEvent e) {
         r.removeMouseListener(this);
         System.exit(0);
     }
 
-    public void mouseEntered(MouseEvent e) {
-    }
-
-    public void mouseExited(MouseEvent e) {
-    }
-
-    public void mouseClicked(MouseEvent e) {
-    }
+    /* Java interface cruft. */
+    public void mousePressed(MouseEvent e) {}
+    public void mouseEntered(MouseEvent e) {    }
+    public void mouseExited(MouseEvent e) {    }
+    public void mouseClicked(MouseEvent e) {    }
 
 }
 
