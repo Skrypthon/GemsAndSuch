@@ -21,7 +21,7 @@ public class GemGameController implements MouseListener, MouseMotionListener, Ge
     private int GEM_BOX_Y = 20;
 
     // How long does a game last before we tell people to bugger off.
-    private long GAME_LENGTH_IN_MS = 1000 * 60 * 5;
+    private long GAME_LENGTH_IN_MS = 1000 * 60 * 2;
 
     // Somewhere to keep mouse actions
     private ArrayList<ClickArea> buttons = new ArrayList<ClickArea>();
@@ -94,9 +94,6 @@ public class GemGameController implements MouseListener, MouseMotionListener, Ge
         long gameEnd = System.currentTimeMillis() + msRemaining;
         while(msRemaining > 0 && !quitGame.isQuit()){
 
-            // Count milliseconds remaining
-            msRemaining = gameEnd - System.currentTimeMillis();
-
             // Render interface
             drawInterface(msRemaining);
 
@@ -110,6 +107,10 @@ public class GemGameController implements MouseListener, MouseMotionListener, Ge
             // If paused, push gameend forwards realtime
             if(pauseGame.isPaused())
                 gameEnd = System.currentTimeMillis() + msRemaining;
+
+
+            // Count milliseconds remaining
+            msRemaining = gameEnd - System.currentTimeMillis();
         }
 
         // We don't care about the mouse any more
@@ -155,7 +156,9 @@ public class GemGameController implements MouseListener, MouseMotionListener, Ge
             r.string("Score: ", 10, 60, r.fontSmall, "WHITE", "");
             r.string("" + g.getScore(), 10, 80, r.fontBig, "YELLOW", "");
             r.string("Time: ", 10, 130, r.fontSmall, "WHITE", "");
-            r.string("" + minutesRemaining + ":" + secondsRemaining, 10, 160, r.fontBig, "YELLOW", "");
+            r.string("" + minutesRemaining + ":" + 
+                    (secondsRemaining < 10 ? "0" : "") + /* Why am I doing this myself and not using a formatter... */
+                    secondsRemaining, 10, 160, r.fontBig, "YELLOW", "");
             r.hline(10, 200, (160.0/GAME_LENGTH_IN_MS) * msRemaining, 5, "YELLOW");
             r.string("combo: ", 10, 230, r.fontSmall, "white", "");
             r.string("" + g.lastCombo(), 10, 260, r.fontBig, "YELLOW", "");
