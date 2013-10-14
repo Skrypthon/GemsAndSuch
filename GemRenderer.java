@@ -18,6 +18,13 @@ public class GemRenderer extends Plotter{
     private ArrayList<Point2D.Double> bgcircles = new ArrayList<Point2D.Double>();
     private ArrayList<Point2D.Double> bgmotion = new ArrayList<Point2D.Double>();
 
+    // Store ms since last frame
+    private long lastFrameMillis = System.currentTimeMillis();
+    private double fps = 1;
+
+    // Size of a gem
+    public static final int GEM_SIZE = 50;
+
     /** Create a new rendering window and context, with a given title.
      *
      * @throws IOException when the font files cannot be loaded properly.
@@ -65,5 +72,124 @@ public class GemRenderer extends Plotter{
         }
 
     }
- 
+
+    /** Returns the FPS, computed between delayAndClear.
+     * Max FPS is 100 due to the delay in SolarSystem.
+     */
+    public double getFPS(){
+        return fps;
+    }
+
+    /** Delay and clear the screen.  Called to finalise a frame,
+     * also computes FPS.
+     */
+    public void delayAndClear(){
+
+        // Compute FPS
+        long now = System.currentTimeMillis();
+        fps = (1000.0 / (now - lastFrameMillis));
+        lastFrameMillis = now;
+
+        super.delayAndClear();
+        lastFrameMillis = System.currentTimeMillis();
+    }
+
+
+    /** Render the gems in a grid. */
+    public void renderGems(GemGame g, int gemBoxX, int gemBoxY) throws Plotter.EntityLimitException{
+        for(int i=0; i<g.GRID_WIDTH; i++){
+            for(int j=0; j<g.GRID_WIDTH; j++){
+                renderGem(g.getGemXY(i, j),
+                        gemBoxX + (GEM_SIZE * i),
+                        gemBoxY + (GEM_SIZE * j),
+                        g
+                        );
+            }
+        }
+    }
+
+    /** Render a single gem in the GEM_SIZExGEM_SIZE space with the top-left at x, y. */
+    public void renderGem(Gem gem, double x, double y, GemGame g) throws Plotter.EntityLimitException{
+
+        // Outline on hover using painter's algorithm 
+        if(gem.isHover()){
+            circleOutline(x + 50 / 2.0, y + 50 / 2.0, 50, 5, "WHITE", "GREY");
+        }
+        
+        // Gem rendering.  TODO: make this much much fancier.
+        switch(gem.type){
+            case 0: 
+                circle(x + 25, y + 25, 42, "ORANGE");
+
+                // Orange is a clock
+                double angle = System.currentTimeMillis() % 10000 / (5000.0/Math.PI);
+                double xdev = 20 * Math.cos(angle);
+                double ydev = 20 * Math.sin(angle);
+                circleOutline(x + 25 + xdev, y + 25 + ydev, 8, 2, "BLACK", "RED");
+                /* circleOutline(x + 15, y + 15, 7, 1, "WHITE", "RED"); */
+                    break;
+            case 1: 
+                    circleOutline(x + 25, y + 25, 42, 2, "ORANGE", "RED");
+                    circleOutline(x + 25, y + 25, 32, 2, "BLUE", "RED");
+                    circleOutline(x + 25, y + 25, 22, 2, "GRAY", "RED");
+                    circleOutline(x + 25, y + 25, 12, 2, "MAGENTA", "RED");
+                    circleOutline(x + 25, y + 25, 2, 2, "BLACK", "RED");
+                    break;
+            case 2: 
+                    circle(x + 25, y + 25, 42, "GREEN");
+                    circle(x + 35, y + 25, 20, "BLUE");
+                    circle(x + 35, y + 25, 10, "GREEN");
+                    circle(x + 25, y + 15, 20, "BLUE");
+                    circle(x + 25, y + 15, 10, "GREEN");
+                    circle(x + 25, y + 35, 20, "BLUE");
+                    circle(x + 25, y + 35, 10, "GREEN");
+                    circle(x + 15, y + 25, 20, "BLUE");
+                    circle(x + 15, y + 25, 10, "GREEN");
+                    circle(x + 25, y + 25, 20, "GREEN");
+                    circleOutline(x + 25, y + 25, 20, 8, "GREEN", "BLUE");
+                    break;
+            case 3: 
+                    circle(x + 25, y + 25, 42, "MAGENTA");
+                    vline(x + 25, y + 4 , 42, 2, "YELLOW");
+                    vline(x + 15, y + 8 , 36, 2, "YELLOW");
+                    vline(x + 35, y + 8 , 36, 2, "YELLOW");
+                    hline(x + 4, y + 25 , 42, 2, "YELLOW");
+                    hline(x + 8, y + 15 , 36, 2, "YELLOW");
+                    hline(x + 8, y + 35 , 36, 2, "YELLOW");
+                    break;
+            case 4: 
+                    circle(x + 25, y + 25, 42, "RED");
+                    for(int i=0; i<5; i++){
+                        circle(x + 25 + Math.random() * 20 - 10, y + 25 + Math.random() * 20 - 10, 2, "ORANGE");
+                    }
+                    break;
+            case 5: 
+                    circle(x + 25, y + 25, 42, "CYAN");
+                    // The cyan one shows the last score with the size of its inner circle,
+                    // up to a max score of 42
+                    circleOutline(x + 25, y + 25, Math.min(g.lastCombo(), 42), 4, "CYAN", "BLUE");
+                    
+
+                    break;
+            default: circleOutline(x + 50 / 2.0, y + 50 / 2.0, 50 / 1.2, 2, "BLACK", "WHITE");
+                    break;
+        }
+
+
+        // Draw the reticule when a gem is active
+        if(gem.isActive()){
+            hline(x, y, 10, 2, "YELLOW");
+            hline(x+40, y, 10, 2, "YELLOW");
+            hline(x, y+50, 10, 2, "YELLOW");
+            hline(x+40, y+50, 10, 2, "YELLOW");
+            
+            vline(x, y, 10, 2, "YELLOW");
+            vline(x, y+40, 10, 2, "YELLOW");
+            vline(x+50, y, 10, 2, "YELLOW");
+            vline(x+50, y+40, 10, 2, "YELLOW");
+        }
+
+    }
+
+
 }

@@ -17,10 +17,6 @@ public class GemGameController implements MouseListener, MouseMotionListener{
     private int GEM_BOX_X = 200;
     private int GEM_BOX_Y = 20;
 
-    // Gem size.  Note that this must be 50 because the drawing specialisms
-    // I added later will cause screwups otherwise.  FIXME for sure.
-    private int GEM_SIZE = 50;
-
     // How long does a game last before we tell people to bugger off.
     private long GAME_LENGTH_IN_TICKS = 8000;
 
@@ -56,10 +52,10 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             for(int j=0; j<g.GRID_WIDTH; j++){
 
                 cl = new GemClickArea(g, i, j,
-                        GEM_BOX_X + (GEM_SIZE * i),
-                        GEM_BOX_Y + (GEM_SIZE * j),
-                        GEM_SIZE,
-                        GEM_SIZE
+                        GEM_BOX_X + (r.GEM_SIZE * i),
+                        GEM_BOX_Y + (r.GEM_SIZE * j),
+                        r.GEM_SIZE,
+                        r.GEM_SIZE
                         );
 
                 buttons.add(cl);
@@ -77,12 +73,12 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         long ticksRemaining = GAME_LENGTH_IN_TICKS;
         while(ticksRemaining > 0 && !quitGame.isQuit()){
 
-            drawBoilerplate(ticksRemaining);
-            renderGems();
+            drawInterface(ticksRemaining);
 
             // Check we're not near the entity limit.
             // In practice, we're not (hooray!) and use around 20k
             /* System.out.println("DEBUG: Entities: " + r.getEntityCount()); */
+            /* System.out.println("DEBUG: fps: " + r.getFPS()); */
 
             r.delayAndClear();
 
@@ -96,7 +92,7 @@ public class GemGameController implements MouseListener, MouseMotionListener{
     }
 
     // Draw all the boilerplate and UI stuff.
-    private void drawBoilerplate(long ticksRemaining){
+    private void drawInterface(long ticksRemaining){
         try{
 
             r.niceBackground();
@@ -114,6 +110,7 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             r.hline(10, 200, (160.0/GAME_LENGTH_IN_TICKS) * ticksRemaining, 5, "YELLOW");
             r.string("combo: ", 10, 230, r.fontSmall, "white", "");
             r.string("" + g.lastCombo(), 10, 260, r.fontBig, "YELLOW", "");
+            r.string("FPS:" + (int)Math.ceil(r.getFPS()), 515, 0, r.fontSmall, "GREY", "");
 
             if(pauseGame.isPaused())
                 r.string("Paused", 40, 360, r.fontSmall, "RED", "");
@@ -123,7 +120,10 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             r.string("[Quit]", 43, 390, r.fontSmall, "GREY", "");
 
             // Box around gems
-            r.box(GEM_BOX_X, GEM_BOX_Y, g.GRID_WIDTH * GEM_SIZE, g.GRID_WIDTH * GEM_SIZE, 1, "GREY");
+            r.box(GEM_BOX_X, GEM_BOX_Y, g.GRID_WIDTH * r.GEM_SIZE, g.GRID_WIDTH * r.GEM_SIZE, 1, "GREY");
+
+            // Gems
+            r.renderGems(g, GEM_BOX_X, GEM_BOX_Y);
 
         // Ignore these but warn on stderr
         }catch(Plotter.EntityLimitException e){
@@ -131,105 +131,9 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         }
     }
 
-    /** Render the gems in a loop. */
-    private void renderGems(){
-        try{
-            for(int i=0; i<g.GRID_WIDTH; i++){
-                for(int j=0; j<g.GRID_WIDTH; j++){
-                    renderGem(g.getGemXY(i, j),
-                            GEM_BOX_X + (GEM_SIZE * i),
-                            GEM_BOX_Y + (GEM_SIZE * j)
-                            );
-                }
-            }
-        }catch(Plotter.EntityLimitException e){
-            System.err.println("Error!  Can't render all the gems!");
-        }
-    }
 
 
-    /** Render a single gem in the GEM_SIZExGEM_SIZE space with the top-left at x, y. */
-    private void renderGem(Gem gem, double x, double y) throws Plotter.EntityLimitException{
 
-        // Outline on hover using painter's algorithm 
-        if(gem.isHover()){
-            r.circleOutline(x + GEM_SIZE / 2.0, y + GEM_SIZE / 2.0, GEM_SIZE, 5, "WHITE", "GREY");
-        }
-        
-        // Gem rendering.  TODO: make this much much fancier.
-        switch(gem.type){
-            case 0: 
-                r.circle(x + 25, y + 25, 42, "ORANGE");
-
-                // Orange is a clock
-                double angle = System.currentTimeMillis() % 10000 / (5000.0/Math.PI);
-                double xdev = 20 * Math.cos(angle);
-                double ydev = 20 * Math.sin(angle);
-                r.circleOutline(x + 25 + xdev, y + 25 + ydev, 8, 2, "BLACK", "RED");
-                /* r.circleOutline(x + 15, y + 15, 7, 1, "WHITE", "RED"); */
-                    break;
-            case 1: 
-                    r.circleOutline(x + 25, y + 25, 42, 2, "ORANGE", "RED");
-                    r.circleOutline(x + 25, y + 25, 32, 2, "BLUE", "RED");
-                    r.circleOutline(x + 25, y + 25, 22, 2, "GRAY", "RED");
-                    r.circleOutline(x + 25, y + 25, 12, 2, "MAGENTA", "RED");
-                    r.circleOutline(x + 25, y + 25, 2, 2, "BLACK", "RED");
-                    break;
-            case 2: 
-                    r.circle(x + 25, y + 25, 42, "GREEN");
-                    r.circle(x + 35, y + 25, 20, "BLUE");
-                    r.circle(x + 35, y + 25, 10, "GREEN");
-                    r.circle(x + 25, y + 15, 20, "BLUE");
-                    r.circle(x + 25, y + 15, 10, "GREEN");
-                    r.circle(x + 25, y + 35, 20, "BLUE");
-                    r.circle(x + 25, y + 35, 10, "GREEN");
-                    r.circle(x + 15, y + 25, 20, "BLUE");
-                    r.circle(x + 15, y + 25, 10, "GREEN");
-                    r.circle(x + 25, y + 25, 20, "GREEN");
-                    r.circleOutline(x + 25, y + 25, 20, 8, "GREEN", "BLUE");
-                    break;
-            case 3: 
-                    r.circle(x + 25, y + 25, 42, "MAGENTA");
-                    r.vline(x + 25, y + 4 , 42, 2, "YELLOW");
-                    r.vline(x + 15, y + 8 , 36, 2, "YELLOW");
-                    r.vline(x + 35, y + 8 , 36, 2, "YELLOW");
-                    r.hline(x + 4, y + 25 , 42, 2, "YELLOW");
-                    r.hline(x + 8, y + 15 , 36, 2, "YELLOW");
-                    r.hline(x + 8, y + 35 , 36, 2, "YELLOW");
-                    break;
-            case 4: 
-                    r.circle(x + 25, y + 25, 42, "RED");
-                    for(int i=0; i<5; i++){
-                        r.circle(x + 25 + Math.random() * 20 - 10, y + 25 + Math.random() * 20 - 10, 2, "ORANGE");
-                    }
-                    break;
-            case 5: 
-                    r.circle(x + 25, y + 25, 42, "CYAN");
-                    // The cyan one shows the last score with the size of its inner circle,
-                    // up to a max score of 42
-                    r.circleOutline(x + 25, y + 25, Math.min(g.lastCombo(), 42), 4, "CYAN", "BLUE");
-                    
-
-                    break;
-            default: r.circleOutline(x + GEM_SIZE / 2.0, y + GEM_SIZE / 2.0, GEM_SIZE / 1.2, 2, "BLACK", "WHITE");
-                    break;
-        }
-
-
-        // Draw the reticule when a gem is active
-        if(gem.isActive()){
-            r.hline(x, y, 10, 2, "YELLOW");
-            r.hline(x+40, y, 10, 2, "YELLOW");
-            r.hline(x, y+50, 10, 2, "YELLOW");
-            r.hline(x+40, y+50, 10, 2, "YELLOW");
-            
-            r.vline(x, y, 10, 2, "YELLOW");
-            r.vline(x, y+40, 10, 2, "YELLOW");
-            r.vline(x+50, y, 10, 2, "YELLOW");
-            r.vline(x+50, y+40, 10, 2, "YELLOW");
-        }
-
-    }
 
     /** Handle mouse clicks by looking for ClickAreas in the buttons ArrayList. */
     public void mouseClicked(MouseEvent e) {
