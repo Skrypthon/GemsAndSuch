@@ -90,50 +90,55 @@ public class GemRenderer extends Plotter{
         fps = (1000.0 / (now - lastFrameMillis));
         lastFrameMillis = now;
 
+        // And call super
         super.delayAndClear();
         lastFrameMillis = System.currentTimeMillis();
     }
 
 
     /** Render the gems in a grid. */
-    public void renderGems(GemGame g, int gemBoxX, int gemBoxY) throws Plotter.EntityLimitException{
-        for(int i=0; i<g.GRID_WIDTH; i++){
-            for(int j=0; j<g.GRID_WIDTH; j++){
-                renderGem(g.getGemXY(i, j),
-                        gemBoxX + (GEM_SIZE * i),
-                        gemBoxY + (GEM_SIZE * j),
-                        g
-                        );
-            }
+    public void renderGems(RenderGrid grid, GemGame g) throws Plotter.EntityLimitException{
+        for(int i=0; i<grid.getGrid().length; i++){
+            if(grid.getGrid()[i] != null)
+                renderGem(grid.getGrid()[i], g);
         }
     }
 
     /** Render a single gem in the GEM_SIZExGEM_SIZE space with the top-left at x, y. */
-    public void renderGem(Gem gem, double x, double y, GemGame g) throws Plotter.EntityLimitException{
+    public void renderGem(RenderGem rgem, GemGame g) throws Plotter.EntityLimitException{
+
+        // Read render positions from the gem
+        double x = rgem.getScreenX();
+        double y = rgem.getScreenY();
+        double visibility = rgem.getVisibility();
+
+        // TODO: Render fade in/out with more than 1 bit of accuracy
+        if(visibility < 0.999)
+            return;
 
         // Outline on hover using painter's algorithm 
-        if(gem.isHover()){
-            circleOutline(x + 50 / 2.0, y + 50 / 2.0, 50, 5, "WHITE", "GREY");
+        if(rgem.isHover()){
+            circleOutline(x + 50 / 2.0, y + 50 / 2.0, 50 * rgem.getScale(), 5, "WHITE", "GREY");
         }
         
         // Gem rendering.  TODO: make this much much fancier.
-        switch(gem.type){
+        switch(rgem.gem.type){
             case 0: 
-                circle(x + 25, y + 25, 42, "ORANGE");
+                circle(x + 25, y + 25, 42 * rgem.getScale(), "ORANGE");
 
                 // Orange is a clock
                 double angle = System.currentTimeMillis() % 10000 / (5000.0/Math.PI);
                 double xdev = 20 * Math.cos(angle);
                 double ydev = 20 * Math.sin(angle);
-                circleOutline(x + 25 + xdev, y + 25 + ydev, 8, 2, "BLACK", "RED");
+                circleOutline(x + 25 + xdev, y + 25 + ydev, 8 * rgem.getScale(), 2, "BLACK", "RED");
                 /* circleOutline(x + 15, y + 15, 7, 1, "WHITE", "RED"); */
                     break;
             case 1: 
-                    circleOutline(x + 25, y + 25, 42, 2, "ORANGE", "RED");
-                    circleOutline(x + 25, y + 25, 32, 2, "BLUE", "RED");
-                    circleOutline(x + 25, y + 25, 22, 2, "GRAY", "RED");
-                    circleOutline(x + 25, y + 25, 12, 2, "MAGENTA", "RED");
-                    circleOutline(x + 25, y + 25, 2, 2, "BLACK", "RED");
+                    circleOutline(x + 25, y + 25, 42 * rgem.getScale(), 2, "ORANGE", "RED");
+                    circleOutline(x + 25, y + 25, 32 * rgem.getScale(), 2, "BLUE", "RED");
+                    circleOutline(x + 25, y + 25, 22 * rgem.getScale(), 2, "GRAY", "RED");
+                    circleOutline(x + 25, y + 25, 12 * rgem.getScale(), 2, "MAGENTA", "RED");
+                    circleOutline(x + 25, y + 25, 2 * rgem.getScale(), 2, "BLACK", "RED");
                     break;
             case 2: 
                     circle(x + 25, y + 25, 42, "GREEN");
@@ -149,25 +154,26 @@ public class GemRenderer extends Plotter{
                     circleOutline(x + 25, y + 25, 20, 8, "GREEN", "BLUE");
                     break;
             case 3: 
-                    circle(x + 25, y + 25, 42, "MAGENTA");
-                    vline(x + 25, y + 4 , 42, 2, "YELLOW");
-                    vline(x + 15, y + 8 , 36, 2, "YELLOW");
-                    vline(x + 35, y + 8 , 36, 2, "YELLOW");
-                    hline(x + 4, y + 25 , 42, 2, "YELLOW");
-                    hline(x + 8, y + 15 , 36, 2, "YELLOW");
-                    hline(x + 8, y + 35 , 36, 2, "YELLOW");
+                    circle(x + 25, y + 25, 42 * rgem.getScale() , "MAGENTA");
+                    vline(x + 25, y + 4 , 42 * rgem.getScale(), 2, "YELLOW");
+                    vline(x + 15, y + 8 , 36 * rgem.getScale(), 2, "YELLOW");
+                    vline(x + 35, y + 8 , 36 * rgem.getScale(), 2, "YELLOW");
+                    hline(x + 4, y + 25 , 42 * rgem.getScale(), 2, "YELLOW");
+                    hline(x + 8, y + 15 , 36 * rgem.getScale(), 2, "YELLOW");
+                    hline(x + 8, y + 35 , 36 * rgem.getScale(), 2, "YELLOW");
                     break;
             case 4: 
-                    circle(x + 25, y + 25, 42, "RED");
+                    circle(x + 25, y + 25, 42 * rgem.getScale(), "RED");
                     for(int i=0; i<5; i++){
-                        circle(x + 25 + Math.random() * 20 - 10, y + 25 + Math.random() * 20 - 10, 2, "ORANGE");
+                        circle(x + 25 + Math.random() * 20 * rgem.getScale() - 10, 
+                               y + 25 + Math.random() * 20 * rgem.getScale() - 10, 2, "ORANGE");
                     }
                     break;
             case 5: 
-                    circle(x + 25, y + 25, 42, "CYAN");
+                    circle(x + 25, y + 25, 42 * rgem.getScale(), "CYAN");
                     // The cyan one shows the last score with the size of its inner circle,
                     // up to a max score of 42
-                    circleOutline(x + 25, y + 25, Math.min(g.lastCombo(), 42), 4, "CYAN", "BLUE");
+                    circleOutline(x + 25, y + 25, Math.min(g.lastCombo(), 42) * rgem.getScale(), 4, "CYAN", "BLUE");
                     
 
                     break;
@@ -177,7 +183,7 @@ public class GemRenderer extends Plotter{
 
 
         // Draw the reticule when a gem is active
-        if(gem.isActive()){
+        if(rgem.gem.isActive()){
             hline(x, y, 10, 2, "YELLOW");
             hline(x+40, y, 10, 2, "YELLOW");
             hline(x, y+50, 10, 2, "YELLOW");

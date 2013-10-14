@@ -23,9 +23,20 @@ public class GemGame{
     private int score = 0;
     private int scorePerClick = 0; // Used to weight bonus score
 
+    // Callbacks (optional)
+    private GemUpdateListener controller = null;
+
     /** Creates a new game with 0 score and random gems. */
     public GemGame() throws java.io.IOException{
         initGems();
+    }
+
+    public void addController(GemUpdateListener controller){
+        this.controller = controller;
+    }
+
+    public void removeController(){
+        this.controller = null;
     }
 
     /** Returns the total score to this point. */
@@ -41,7 +52,7 @@ public class GemGame{
 
         // Fill with random gems
         for(int i=0; i<grid.length; i++){
-            grid[i] = new Gem();
+            newGem(getGemX(i), getGemY(i));
         }
 
         // Delete from the bottom to force "settling"
@@ -51,13 +62,13 @@ public class GemGame{
 
         // Reset score afterwards
         score = 0;
+        scorePerClick = 0;
     }
 
     /** Select a gem based on an object reference. */
     public void selectGem(Gem gem){
         // Find gem
         int index = findGemIndex(gem);
-
     }
 
     /** Select a gem using an index number. */
@@ -113,6 +124,13 @@ public class GemGame{
     /** Swap a gem with the one in the selection buffer. */
     private void swap(int x, int y, int x2, int y2){
 
+        // Call the gem update listener if one exists
+        if(controller != null){
+            controller.swapGems(x, y, x2, y2);
+            /* controller.moveGem(x,y, x2, y2); */
+            /* controller.moveGem(x2,y2, x, y); */
+        }
+
         // Swap using the selection buffer
         int idx1 = getGemIndex(x, y);
         int idx2 = getGemIndex(x2, y2);
@@ -124,8 +142,6 @@ public class GemGame{
         // Deselect everything involved
         grid[idx1].deactivate();
         grid[idx2].deactivate();
-        grid[idx1].hoverOut();
-        grid[idx2].hoverOut();
     }
 
     /** Returns the score from the last user interaction, including all cascade bonuses. */
@@ -197,18 +213,43 @@ public class GemGame{
      */
     private void deleteAndShift(int x, int y){
 
+        if(controller != null)
+            controller.delGem(x, y);
+
         // Shift all the gems up, overwriting the dead one and losing its ref.
         for( int i=y; i>0; i--){
-            grid[ getGemIndex(x, i) ] = grid[ getGemIndex(x, i-1) ];
+            moveGem(x, i-1, x, i);
         }
 
         // Add a new random gem at the top
-        grid[ getGemIndex(x, 0) ] = new Gem();
+        newGem(x, 0);
 
         // Then consider the cascade of every gem "up" from the deleted one
-        for(int i=y; i>0; i--){
+        for(int i=y; i>=0; i--){
             cascadeFrom(x, i);
         }
+    }
+
+    /** Move a gem from x,y to x2,y2 */
+    private void moveGem(int x, int y, int x2, int y2){
+
+        grid[ getGemIndex(x2, y2) ] = grid[ getGemIndex(x, y) ];
+
+        if(controller != null)
+            controller.moveGem(x, y, x2, y2);
+    }
+
+
+
+    /** Create new gem at x,y with random type. */
+    private void newGem(int x, int y){
+        Gem gem = new Gem();
+        grid[ getGemIndex(x, y) ] = gem;
+
+
+        // Alert any listening controllers
+        if(controller != null)
+            controller.newGem(x, y, gem);
     }
 
 
@@ -218,7 +259,6 @@ public class GemGame{
      * deleteAndShift.
      */
     private boolean cascadeFrom(int x, int y){
-        
         // First, find the group that match
         ArrayList<Point> hgroup = new ArrayList<Point>();
         ArrayList<Point> vgroup = new ArrayList<Point>();
@@ -253,7 +293,6 @@ public class GemGame{
         return cascaded;
     }
 
-
     /** Test if a co-ordinate is immediately adjacent to the
      * existing half-selection.
      *
@@ -276,21 +315,14 @@ public class GemGame{
     /** Called when hovering over a gem.
      * Will highlight a gem only if it is a legal move.
      */
-    public void hoverIn(int x, int y){
-
+    public boolean isLegalMove(int x, int y){
         if(halfSelection == null){
-            getGemXY(x, y).hoverIn();
+            return true;
         }else{
             if(adjacent(x, y))
-                getGemXY(x, y).hoverIn();
+                return true;
         }
-    }
-
-    /** Called when hovering away from a gem.
-     */
-    public void hoverOut(int x, int y){
-        // TODO: logic
-        getGemXY(x, y).hoverOut();
+        return false;
     }
 
     /** Return the 1D index from 2D coordinates. */

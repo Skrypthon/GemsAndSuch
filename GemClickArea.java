@@ -9,14 +9,22 @@ public class GemClickArea extends ClickArea{
     private int gemx;
     private int gemy;
 
+    // Store a handle to the callback thingy
+    private GemGameController controller;
+
     /** Allows a user to click on a gem.  Passes most of its logic through to the Game model.
      *
      * @param game The game model to pass events to.
      * @param gemx The gem X co-ordinate in the grid
      * @param gemy The gem y-co-ord in the grid.
      */
-    public GemClickArea( GemGame game, int gemx, int gemy, int x, int y, int w, int h){
+    public GemClickArea( GemGame game, GemGameController controller, int gemx, int gemy, int x, int y, int w, int h){
         super(x, y, w, h);
+
+        // Handles hover hints on the renderable gems,
+        // since we might end up losing rendergems if we simply
+        // passed the array.
+        this.controller = controller;
 
         this.game = game;
 
@@ -27,13 +35,14 @@ public class GemClickArea extends ClickArea{
 
     /** Alerts the game that a gem is no longer a candidate for selection. */
     public void hoverout(){
-        game.hoverOut( gemx, gemy );
+        controller.hoverOut(gemx, gemy);
     }
 
     /** Alerts the game that a gem is a candidate for selection, allowing it
      * to apply game rules to the highlighting process. */
     public void hoverin(){
-        game.hoverIn( gemx, gemy );
+        if(game.isLegalMove(gemx, gemy))
+            controller.hoverIn(gemx, gemy);
     }
 
     /** Tells the game the user wishes to select a given gem. */

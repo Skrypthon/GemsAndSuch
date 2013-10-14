@@ -7,18 +7,21 @@ import java.awt.MouseInfo;
  *
  * Bit of a god class really, but hey, MVC is ugly sometimes.
  * */
-public class GemGameController implements MouseListener, MouseMotionListener{
+public class GemGameController implements MouseListener, MouseMotionListener, GemUpdateListener{
 
     /* Store things we need to get to */
     private GemGame g;
     private GemRenderer r;
+
+    /** Store a parallel structure with renderable gems. */
+    private RenderGrid grid;
 
     // Gem box location for easier drawing
     private int GEM_BOX_X = 200;
     private int GEM_BOX_Y = 20;
 
     // How long does a game last before we tell people to bugger off.
-    private long GAME_LENGTH_IN_TICKS = 8000;
+    private long GAME_LENGTH_IN_MS = 1000 * 60 * 5;
 
     // Somewhere to keep mouse actions
     private ArrayList<ClickArea> buttons = new ArrayList<ClickArea>();
@@ -33,9 +36,15 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         this.r = r;
         this.g = g;
 
+        g.addController(this);
+
+        grid = new RenderGrid(g, GEM_BOX_X, GEM_BOX_Y, r.GEM_SIZE);
+
         setupClickAreas();
 
         gameLoop();
+
+        g.removeController();
     }
 
 
@@ -51,7 +60,8 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         for(int i=0; i<g.GRID_WIDTH; i++){
             for(int j=0; j<g.GRID_WIDTH; j++){
 
-                cl = new GemClickArea(g, i, j,
+                cl = new GemClickArea(g, this,
+                        i, j,
                         GEM_BOX_X + (r.GEM_SIZE * i),
                         GEM_BOX_Y + (r.GEM_SIZE * j),
                         r.GEM_SIZE,
@@ -63,6 +73,16 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         }
     }
 
+    /** Set hover hint on the render gem at X, Y. */
+    public void hoverIn(int x, int y){
+        grid.getGem(x, y).setHover(true);
+    }
+
+    /** Unset hover hint on the render gem at x, y. */
+    public void hoverOut(int x, int y){
+        grid.getGem(x, y).setHover(false);
+    }
+
     /** Run the main game loop. */
     public void gameLoop(){
 
@@ -70,10 +90,15 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         r.addMouseListener(this);
         r.addMouseMotionListener(this);
 
-        long ticksRemaining = GAME_LENGTH_IN_TICKS;
-        while(ticksRemaining > 0 && !quitGame.isQuit()){
+        long msRemaining = GAME_LENGTH_IN_MS;
+        long gameEnd = System.currentTimeMillis() + msRemaining;
+        while(msRemaining > 0 && !quitGame.isQuit()){
 
-            drawInterface(ticksRemaining);
+            // Count milliseconds remaining
+            msRemaining = gameEnd - System.currentTimeMillis();
+
+            // Render interface
+            drawInterface(msRemaining);
 
             // Check we're not near the entity limit.
             // In practice, we're not (hooray!) and use around 20k
@@ -82,8 +107,9 @@ public class GemGameController implements MouseListener, MouseMotionListener{
 
             r.delayAndClear();
 
-            if(!pauseGame.isPaused())
-                ticksRemaining -= 1;
+            // If paused, push gameend forwards realtime
+            if(pauseGame.isPaused())
+                gameEnd = System.currentTimeMillis() + msRemaining;
         }
 
         // We don't care about the mouse any more
@@ -91,9 +117,32 @@ public class GemGameController implements MouseListener, MouseMotionListener{
         r.removeMouseMotionListener(this);
     }
 
+    /** Callback from GemUpdateListener. */
+    public void swapGems(int x, int y, int x2, int y2){
+        grid.swapGems(x, y, x2, y2);
+    }
+
+    /** Callback from GemUpdateListener. */
+    public void moveGem(int x, int y, int x2, int y2){
+        grid.moveGem(x,y,x2,y2);
+    }
+
+    /** Callback from GemUpdateListener. */
+    public void newGem(int x, int y, Gem gem){
+        grid.newGem(x, y, gem);
+    }
+
+    /** Callback from GemUpdateListener. */
+    public void delGem(int x, int y){
+        grid.delGem(x, y);
+    }
+
     // Draw all the boilerplate and UI stuff.
-    private void drawInterface(long ticksRemaining){
+    private void drawInterface(long msRemaining){
         try{
+
+            int minutesRemaining = (int)Math.floor(msRemaining / 60000.0);
+            int secondsRemaining = (int)Math.floor((msRemaining - (60000 * minutesRemaining)) / 1000.0);
 
             r.niceBackground();
 
@@ -106,8 +155,8 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             r.string("Score: ", 10, 60, r.fontSmall, "WHITE", "");
             r.string("" + g.getScore(), 10, 80, r.fontBig, "YELLOW", "");
             r.string("Time: ", 10, 130, r.fontSmall, "WHITE", "");
-            r.string("" + ticksRemaining, 10, 160, r.fontBig, "YELLOW", "");
-            r.hline(10, 200, (160.0/GAME_LENGTH_IN_TICKS) * ticksRemaining, 5, "YELLOW");
+            r.string("" + minutesRemaining + ":" + secondsRemaining, 10, 160, r.fontBig, "YELLOW", "");
+            r.hline(10, 200, (160.0/GAME_LENGTH_IN_MS) * msRemaining, 5, "YELLOW");
             r.string("combo: ", 10, 230, r.fontSmall, "white", "");
             r.string("" + g.lastCombo(), 10, 260, r.fontBig, "YELLOW", "");
             r.string("FPS:" + (int)Math.ceil(r.getFPS()), 515, 0, r.fontSmall, "GREY", "");
@@ -123,7 +172,22 @@ public class GemGameController implements MouseListener, MouseMotionListener{
             r.box(GEM_BOX_X, GEM_BOX_Y, g.GRID_WIDTH * r.GEM_SIZE, g.GRID_WIDTH * r.GEM_SIZE, 1, "GREY");
 
             // Gems
-            r.renderGems(g, GEM_BOX_X, GEM_BOX_Y);
+            r.renderGems(grid, g); // FIXME: no need for g.
+
+            // Render spare (non-grid) gems.
+            // Using a for loop here is a fudge to avoid concurrent modification exceptions.
+            // You see, I don't care if it's out of sync, I just want it fast.
+            for(int i=0; i<grid.getSpareGems().length; i++){
+                RenderGem rg = grid.getSpareGems()[i];
+
+                if(rg != null){
+                    if(rg.getVisibility() <= 0){
+                        grid.getSpareGems()[i] = null;
+                    }else{
+                        r.renderGem(rg, g);
+                    }
+                }
+            }
 
         // Ignore these but warn on stderr
         }catch(Plotter.EntityLimitException e){
@@ -175,6 +239,8 @@ public class GemGameController implements MouseListener, MouseMotionListener{
 
         }
     }
+
+
 
     /* Java interface cruft */
     private void checkButtonHoverStates() {}
